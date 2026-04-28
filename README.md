@@ -77,7 +77,7 @@ RUN apt-get update && \
 ```
 This ensures Calibre + ffmpeg are installed once, at build time.
 
-🔄 GitHub Actions Workflow
+## 🔄 GitHub Actions Workflow
 This repository includes a workflow that:
 
 Builds the image on every push to main
@@ -88,7 +88,7 @@ Rebuilds weekly to pick up upstream updates
 
 Workflow file: .github/workflows/build.yml
 
-📘 Dockhand Deployment Example
+## 📘 Dockhand Deployment Example
 yaml
   lazylibrarian:
     image: ghcr.io/lc19k/lazylibrarian-with-tools:latest
@@ -107,7 +107,7 @@ yaml
     restart: unless-stopped
 This is fully compatible with Dockhand’s Git‑backed stack model.
 
-🧪 Verification
+## 🧪 Verification
 After deployment:
 
 bash
@@ -121,6 +121,6 @@ Code
 /usr/bin/ffmpeg
 /usr/bin/calibredb
 calibre 7.x.x or 8.x.x
-📝 License
+## 📝 License
 This project packages open-source components.
 LazyLibrarian is licensed under the GPLv3.
