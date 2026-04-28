@@ -4,6 +4,8 @@ on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
+  schedule:
+    - cron: "0 7 * * 1"   # Weekly rebuild every Monday at 07:00 UTC
 
 jobs:
   build:
@@ -24,12 +26,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Compute tags
+        id: vars
+        run: |
+          echo "date_tag=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+          echo "sha_tag=sha-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
       - name: Build image
         run: |
           docker build \
             -t ghcr.io/lc19k/lazylibrarian-with-tools:latest \
+            -t ghcr.io/lc19k/lazylibrarian-with-tools:${{ steps.vars.outputs.date_tag }} \
+            -t ghcr.io/lc19k/lazylibrarian-with-tools:${{ steps.vars.outputs.sha_tag }} \
             .
 
       - name: Push image
         run: |
           docker push ghcr.io/lc19k/lazylibrarian-with-tools:latest
+          docker push ghcr.io/lc19k/lazylibrarian-with-tools:${{ steps.vars.outputs.date_tag }}
+          docker push ghcr.io/lc19k/lazylibrarian-with-tools:${{ steps.vars.outputs.sha_tag }}
