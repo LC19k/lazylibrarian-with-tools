@@ -82,6 +82,7 @@ This repository includes a workflow that:
 - Builds the image on every push to ```main```
 - Publishes versioned tags (```latest```, ```YYYYMMDD```, ```sha-<commit>```)
 - Rebuilds weekly to pick up upstream updates
+  
 Workflow file: ```.github/workflows/build.yml```
 
 ## 📘 Dockhand Deployment Example
