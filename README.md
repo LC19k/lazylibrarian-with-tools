@@ -35,7 +35,9 @@ Every build publishes:
 - `sha-<commit>` — exact source revision  
 
 Examples:
+
 ```ghcr.io/lc19k/lazylibrarian-with-tools:20260428```
+
 ```ghcr.io/lc19k/lazylibrarian-with-tools:sha-652b2d0d```
 
 These tags make Dockhand deployments **deterministic** and **reproducible**.
