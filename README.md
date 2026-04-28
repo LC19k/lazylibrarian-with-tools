@@ -86,7 +86,7 @@ Publishes versioned tags (latest, YYYYMMDD, sha-<commit>)
 
 Rebuilds weekly to pick up upstream updates
 
-Workflow file: .github/workflows/build.yml
+Workflow file: ```.github/workflows/build.yml```
 
 ## 📘 Dockhand Deployment Example
 ```yaml
