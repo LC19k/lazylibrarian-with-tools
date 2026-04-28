@@ -110,17 +110,18 @@ This is fully compatible with Dockhand’s Git‑backed stack model.
 ## 🧪 Verification
 After deployment:
 
-bash
+```bash
 docker exec -it lazylibrarian bash
 which ffmpeg
 which calibredb
 ebook-convert --version
+```
 Expected output:
-
-Code
+```Code
 /usr/bin/ffmpeg
 /usr/bin/calibredb
 calibre 7.x.x or 8.x.x
+```
 ## 📝 License
 This project packages open-source components.
 LazyLibrarian is licensed under the GPLv3.
