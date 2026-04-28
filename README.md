@@ -74,8 +74,9 @@ RUN apt-get update && \
     apt-get install -y calibre ffmpeg && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-This ensures Calibre + ffmpeg are installed once, at build time.
 ```
+This ensures Calibre + ffmpeg are installed once, at build time.
+
 🔄 GitHub Actions Workflow
 This repository includes a workflow that:
 
