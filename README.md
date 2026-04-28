@@ -80,9 +80,9 @@ This ensures Calibre + ffmpeg are installed once, at build time.
 ## 🔄 GitHub Actions Workflow
 This repository includes a workflow that:
 
-Builds the image on every push to main
+Builds the image on every push to ```main```
 
-Publishes versioned tags (latest, YYYYMMDD, sha-<commit>)
+Publishes versioned tags (```latest```, ```YYYYMMDD```, ```sha-<commit>```)
 
 Rebuilds weekly to pick up upstream updates
 
