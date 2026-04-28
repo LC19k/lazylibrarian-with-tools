@@ -89,7 +89,7 @@ Rebuilds weekly to pick up upstream updates
 Workflow file: .github/workflows/build.yml
 
 ## 📘 Dockhand Deployment Example
-yaml
+```yaml
   lazylibrarian:
     image: ghcr.io/lc19k/lazylibrarian-with-tools:latest
     container_name: lazylibrarian
@@ -105,6 +105,7 @@ yaml
       - /mnt/user/data/media/libraries/audiobooks:/audiobooks
       - /mnt/user/data/media/libraries/ebooks:/ebooks
     restart: unless-stopped
+```
 This is fully compatible with Dockhand’s Git‑backed stack model.
 
 ## 🧪 Verification
