@@ -22,10 +22,7 @@ This custom image moves all of that work into the **Docker build stage**, so the
 ---
 
 ## 📦 Image Location (GHCR)
-
-ghcr.io/lc19k/lazylibrarian-with-tools:latest
-
-Code
+```ghcr.io/lc19k/lazylibrarian-with-tools:latest```
 
 ### Versioned Tags
 
