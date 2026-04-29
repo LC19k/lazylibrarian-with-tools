@@ -87,16 +87,18 @@ RUN apk add --no-cache wget && \
 FROM lscr.io/linuxserver/lazylibrarian:latest
 
 # Install runtime dependencies for Calibre CLI
-RUN apk add --no-cache \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
         python3 \
         libxml2 \
-        libxslt \
-        libjpeg-turbo \
-        libpng \
-        freetype \
-        harfbuzz \
-        fontconfig \
-        unrar
+        libxslt1.1 \
+        libjpeg-turbo8 \
+        libpng16-16 \
+        libfreetype6 \
+        libharfbuzz0b \
+        libfontconfig1 \
+        unrar \
+        && rm -rf /var/lib/apt/lists/*
 
 # Copy Calibre CLI tools
 COPY --from=calibre-builder /opt/calibre /opt/calibre
