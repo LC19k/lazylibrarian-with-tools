@@ -14,7 +14,6 @@ RUN apt-get update && \
 
 WORKDIR /build
 
-# Download ffmpeg source
 RUN wget https://ffmpeg.org/releases/ffmpeg-6.1.1.tar.gz && \
     tar -xzf ffmpeg-6.1.1.tar.gz && \
     cd ffmpeg-6.1.1 && \
@@ -97,11 +96,15 @@ COPY --from=calibre-builder /opt/calibre /opt/calibre
 # Copy minimal ffmpeg
 COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 
+# Install kepubify (latest release)
+RUN wget -O /usr/local/bin/kepubify \
+        https://github.com/pgaskin/kepubify/releases/latest/download/kepubify-linux-64bit && \
+    chmod +x /usr/local/bin/kepubify
+
 # Symlink Calibre tools
 RUN ln -s /opt/calibre/calibredb /usr/bin/calibredb && \
     ln -s /opt/calibre/ebook-convert /usr/bin/ebook-convert && \
     ln -s /opt/calibre/ebook-meta /usr/bin/ebook-meta && \
     ln -s /opt/calibre/ebook-polish /usr/bin/ebook-polish
 
-# Cleanup
 RUN rm -rf /tmp/* /var/tmp/*
