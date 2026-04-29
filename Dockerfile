@@ -71,24 +71,32 @@ RUN rm -rf \
 
 
 ###############################################
-# Stage 3 — Final LazyLibrarian image
+# Stage 3 — Build kepubify (standalone)
+###############################################
+FROM alpine:latest AS kepubify-builder
+
+RUN apk add --no-cache wget && \
+    wget -O /kepubify \
+        https://github.com/pgaskin/kepubify/releases/latest/download/kepubify-linux-64bit && \
+    chmod +x /kepubify
+
+
+###############################################
+# Stage 4 — Final LazyLibrarian image
 ###############################################
 FROM lscr.io/linuxserver/lazylibrarian:latest
 
 # Install runtime dependencies for Calibre CLI
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+RUN apk add --no-cache \
         python3 \
-        unrar \
-        libglib2.0-0 \
         libxml2 \
-        libxslt1.1 \
-        libjpeg-turbo8 \
-        libpng16-16 \
-        libfreetype6 \
-        libharfbuzz0b \
-        libfontconfig1 \
-        && rm -rf /var/lib/apt/lists/*
+        libxslt \
+        libjpeg-turbo \
+        libpng \
+        freetype \
+        harfbuzz \
+        fontconfig \
+        unrar
 
 # Copy Calibre CLI tools
 COPY --from=calibre-builder /opt/calibre /opt/calibre
@@ -96,12 +104,9 @@ COPY --from=calibre-builder /opt/calibre /opt/calibre
 # Copy minimal ffmpeg
 COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 
-# Install kepubify (always enabled for Kobo households)
-# NOTE: Non-Kobo users may comment out the following two lines
-RUN wget -O /usr/local/bin/kepubify \
-        https://github.com/pgaskin/kepubify/releases/latest/download/kepubify-linux-64bit && \
-    chmod +x /usr/local/bin/kepubify && \
-    ln -s /usr/local/bin/kepubify /usr/bin/kepubify
+# Copy kepubify from builder stage
+COPY --from=kepubify-builder /kepubify /usr/local/bin/kepubify
+RUN ln -s /usr/local/bin/kepubify /usr/bin/kepubify
 
 # Symlink Calibre tools
 RUN ln -s /opt/calibre/calibredb /usr/bin/calibredb && \
