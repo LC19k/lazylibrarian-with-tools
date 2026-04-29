@@ -1,39 +1,69 @@
 ###############################################
-# Stage 1 — Build Calibre CLI tools
+# Stage 1 — Build minimal ffmpeg
+###############################################
+FROM debian:stable-slim AS ffmpeg-builder
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        yasm \
+        pkg-config \
+        wget \
+        ca-certificates \
+        && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Download ffmpeg source
+RUN wget https://ffmpeg.org/releases/ffmpeg-6.1.1.tar.gz && \
+    tar -xzf ffmpeg-6.1.1.tar.gz && \
+    cd ffmpeg-6.1.1 && \
+    ./configure \
+        --disable-everything \
+        --enable-small \
+        --enable-protocol=file \
+        --enable-demuxer=mp3 \
+        --enable-demuxer=wav \
+        --enable-demuxer=ogg \
+        --enable-demuxer=flac \
+        --enable-muxer=mp3 \
+        --enable-muxer=wav \
+        --enable-muxer=ogg \
+        --enable-muxer=flac \
+        --enable-decoder=mp3 \
+        --enable-decoder=pcm_s16le \
+        --enable-decoder=vorbis \
+        --disable-debug \
+        --disable-doc \
+        && make -j$(nproc) && make install
+
+
+###############################################
+# Stage 2 — Build Calibre CLI tools
 ###############################################
 FROM debian:stable-slim AS calibre-builder
 
-# Install only what is needed to extract Calibre
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         wget \
         xz-utils \
-        ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+        ca-certificates \
+        && rm -rf /var/lib/apt/lists/*
 
-# Download and extract Calibre 9.7
 RUN wget -O /tmp/calibre.txz \
         https://download.calibre-ebook.com/9.7.0/calibre-9.7.0-x86_64.txz && \
     mkdir -p /opt/calibre && \
     tar -xJf /tmp/calibre.txz -C /opt/calibre --strip-components=1 && \
     rm /tmp/calibre.txz
 
-# Remove GUI components to shrink size
+# Remove GUI components
 RUN rm -rf \
     /opt/calibre/lib/python3.*/site-packages/calibre/gui \
-    /opt/calibre/lib/python3.*/site-packages/calibre/ebooks/rtf2xml \
-    /opt/calibre/lib/python3.*/site-packages/calibre/ebooks/pdf/render \
     /opt/calibre/resources/viewer \
     /opt/calibre/resources/fonts \
     /opt/calibre/resources/images \
-    /opt/calibre/resources/qtwebengine \
-    /opt/calibre/resources/qtwebengine_dictionaries \
-    /opt/calibre/resources/qtwebengine_locales \
-    /opt/calibre/resources/qtwebengine_resources \
-    /opt/calibre/lib/libQt5* \
-    /opt/calibre/lib/libQt6* \
-    /opt/calibre/lib/libQtWebEngine* \
-    /opt/calibre/lib/libQtWebKit* \
+    /opt/calibre/resources/qtwebengine* \
+    /opt/calibre/lib/libQt* \
     /opt/calibre/lib/libxcb* \
     /opt/calibre/lib/libX* \
     /opt/calibre/lib/libGL* \
@@ -42,30 +72,32 @@ RUN rm -rf \
 
 
 ###############################################
-# Stage 2 — Final LazyLibrarian image
+# Stage 3 — Final LazyLibrarian image
 ###############################################
 FROM lscr.io/linuxserver/lazylibrarian:latest
 
-# Install runtime dependencies for Calibre CLI tools
+# Install runtime dependencies for Calibre CLI
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         python3 \
-        ffmpeg \
         unrar \
         libglib2.0-0 \
         libxml2 \
         libxslt1.1 \
-        libjpeg62-turbo \
+        libjpeg-turbo8 \
         libpng16-16 \
         libfreetype6 \
         libharfbuzz0b \
         libfontconfig1 \
         && rm -rf /var/lib/apt/lists/*
 
-# Copy only the CLI tools from the builder stage
+# Copy Calibre CLI tools
 COPY --from=calibre-builder /opt/calibre /opt/calibre
 
-# Symlink binaries into PATH
+# Copy minimal ffmpeg
+COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
+
+# Symlink Calibre tools
 RUN ln -s /opt/calibre/calibredb /usr/bin/calibredb && \
     ln -s /opt/calibre/ebook-convert /usr/bin/ebook-convert && \
     ln -s /opt/calibre/ebook-meta /usr/bin/ebook-meta && \
