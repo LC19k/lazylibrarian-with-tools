@@ -38,7 +38,7 @@ RUN wget https://ffmpeg.org/releases/ffmpeg-6.1.1.tar.gz && \
 
 
 ###############################################
-# Stage 2 — Build Calibre CLI tools
+# Stage 2 — Build Calibre CLI tools (headless)
 ###############################################
 FROM debian:stable-slim AS calibre-builder
 
@@ -55,7 +55,7 @@ RUN wget -O /tmp/calibre.txz \
     tar -xJf /tmp/calibre.txz -C /opt/calibre --strip-components=1 && \
     rm /tmp/calibre.txz
 
-# Remove GUI components
+# Remove GUI components to reduce image size
 RUN rm -rf \
     /opt/calibre/lib/python3.*/site-packages/calibre/gui \
     /opt/calibre/resources/viewer \
@@ -96,10 +96,12 @@ COPY --from=calibre-builder /opt/calibre /opt/calibre
 # Copy minimal ffmpeg
 COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 
-# Install kepubify (latest release)
+# Install kepubify (always enabled for Kobo households)
+# NOTE: Non-Kobo users may comment out the following two lines
 RUN wget -O /usr/local/bin/kepubify \
         https://github.com/pgaskin/kepubify/releases/latest/download/kepubify-linux-64bit && \
-    chmod +x /usr/local/bin/kepubify
+    chmod +x /usr/local/bin/kepubify && \
+    ln -s /usr/local/bin/kepubify /usr/bin/kepubify
 
 # Symlink Calibre tools
 RUN ln -s /opt/calibre/calibredb /usr/bin/calibredb && \
