@@ -1,6 +1,33 @@
-###############################################
+#######################################################################
+# Dockerfile: LazyLibrarian + Calibre CLI + kepubify + minimal ffmpeg
+#
+# This file uses a multi‑stage build to produce a clean, minimal,
+# deterministic final image based on LinuxServer.io's LazyLibrarian.
+#
+# Stages:
+#   1. ffmpeg-builder       → Build a minimal ffmpeg (audio-only)
+#   2. calibre-builder      → Build headless Calibre CLI tools
+#   3. kepubify-builder     → Download kepubify without polluting final image
+#   4. Final stage          → Assemble everything into LSIO LazyLibrarian
+#
+# Notes for maintainers:
+#   - ffmpeg is intentionally minimal to reduce image size.
+#   - Calibre GUI components are removed to avoid unnecessary bloat.
+#   - kepubify is built in a separate Alpine stage to avoid installing
+#     wget/curl/SSL dependencies in the final Debian-based LSIO image.
+#   - The final image contains *no* build tools and *no* compilers.
+#   - This Dockerfile is designed for deterministic, reproducible builds.
+#######################################################################
+
+
+#######################################################################
 # Stage 1 — Build minimal ffmpeg
-###############################################
+#
+# We build ffmpeg ourselves because:
+#   - LSIO's LazyLibrarian image does not include ffmpeg
+#   - We only need audio demuxers/muxers/decoders for metadata extraction
+#   - A minimal ffmpeg reduces image size dramatically
+#######################################################################
 FROM debian:stable-slim AS ffmpeg-builder
 
 RUN apt-get update && \
@@ -14,6 +41,7 @@ RUN apt-get update && \
 
 WORKDIR /build
 
+# Build ffmpeg with only the codecs LazyLibrarian/Calibre need
 RUN wget https://ffmpeg.org/releases/ffmpeg-6.1.1.tar.gz && \
     tar -xzf ffmpeg-6.1.1.tar.gz && \
     cd ffmpeg-6.1.1 && \
@@ -37,9 +65,15 @@ RUN wget https://ffmpeg.org/releases/ffmpeg-6.1.1.tar.gz && \
         && make -j$(nproc) && make install
 
 
-###############################################
+
+#######################################################################
 # Stage 2 — Build Calibre CLI tools (headless)
-###############################################
+#
+# We install Calibre manually because:
+#   - LSIO LazyLibrarian does NOT include Calibre
+#   - We need calibredb, ebook-meta, ebook-convert, etc.
+#   - We remove GUI components to keep the final image small
+#######################################################################
 FROM debian:stable-slim AS calibre-builder
 
 RUN apt-get update && \
@@ -49,13 +83,14 @@ RUN apt-get update && \
         ca-certificates \
         && rm -rf /var/lib/apt/lists/*
 
+# Download and extract Calibre
 RUN wget -O /tmp/calibre.txz \
         https://download.calibre-ebook.com/9.7.0/calibre-9.7.0-x86_64.txz && \
     mkdir -p /opt/calibre && \
     tar -xJf /tmp/calibre.txz -C /opt/calibre --strip-components=1 && \
     rm /tmp/calibre.txz
 
-# Remove GUI components to reduce image size
+# Remove GUI components to reduce size and avoid Qt dependencies
 RUN rm -rf \
     /opt/calibre/lib/python3.*/site-packages/calibre/gui \
     /opt/calibre/resources/viewer \
@@ -70,9 +105,14 @@ RUN rm -rf \
     /opt/calibre/lib/libOpenGL*
 
 
-###############################################
+
+#######################################################################
 # Stage 3 — Build kepubify (standalone)
-###############################################
+#
+# kepubify is downloaded in a separate Alpine stage so that:
+#   - wget/curl/SSL dependencies do NOT pollute the final image
+#   - the final image remains minimal and deterministic
+#######################################################################
 FROM alpine:latest AS kepubify-builder
 
 RUN apk add --no-cache wget && \
@@ -81,9 +121,21 @@ RUN apk add --no-cache wget && \
     chmod +x /kepubify
 
 
-###############################################
+
+#######################################################################
 # Stage 4 — Final LazyLibrarian image
-###############################################
+#
+# This stage assembles:
+#   - LSIO LazyLibrarian base image (Debian-based)
+#   - Calibre CLI tools
+#   - Minimal ffmpeg
+#   - kepubify
+#
+# Notes:
+#   - We install only the runtime libs Calibre needs.
+#   - No compilers or build tools are included.
+#   - This keeps the final image small and secure.
+#######################################################################
 FROM lscr.io/linuxserver/lazylibrarian:latest
 
 # Install runtime dependencies for Calibre CLI
@@ -110,10 +162,11 @@ COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 COPY --from=kepubify-builder /kepubify /usr/local/bin/kepubify
 RUN ln -s /usr/local/bin/kepubify /usr/bin/kepubify
 
-# Symlink Calibre tools
+# Symlink Calibre tools into PATH
 RUN ln -s /opt/calibre/calibredb /usr/bin/calibredb && \
     ln -s /opt/calibre/ebook-convert /usr/bin/ebook-convert && \
     ln -s /opt/calibre/ebook-meta /usr/bin/ebook-meta && \
     ln -s /opt/calibre/ebook-polish /usr/bin/ebook-polish
 
+# Cleanup
 RUN rm -rf /tmp/* /var/tmp/*
