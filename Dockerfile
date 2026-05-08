@@ -71,7 +71,7 @@ RUN apt-get update && \
         xz-utils \
         ca-certificates \
         python3 \
-        python3-distutils \
+        python3-setuptools \
         libglib2.0-0 \
         libx11-6 \
         libxcb1 \
