@@ -1,26 +1,49 @@
 #######################################################################
 # FINAL DOCKERFILE — LazyLibrarian + Calibre + ffmpeg + kepubify
-# Base: LSIO Calibre (includes full Calibre runtime + Qt6 + OpenGL)
+# Base: LSIO LazyLibrarian (Python 3.10, stable)
 #######################################################################
 
-FROM lscr.io/linuxserver/calibre:latest
+FROM lscr.io/linuxserver/lazylibrarian:latest
 
 ############################
-# Install LazyLibrarian
+# Install Calibre (official installer)
 ############################
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        git \
+        wget \
+        xz-utils \
         python3 \
-        python3-pip \
+        python3-setuptools \
         python3-lxml \
         python3-openssl \
-        python3-setuptools \
+        libegl1 \
+        libopengl0 \
+        libxcb-cursor0 \
+        libxkbcommon0 \
+        libxkbcommon-x11-0 \
+        libxcb-xkb1 \
+        libxcb-render0 \
+        libxcb-shape0 \
+        libxcb-xfixes0 \
+        libgl1 \
+        libglx0 \
+        libglvnd0 \
+        libwayland-client0 \
+        libwayland-cursor0 \
+        libwayland-egl1 \
         ca-certificates \
         && rm -rf /var/lib/apt/lists/*
 
-# Install LazyLibrarian from GitHub
-RUN git clone https://github.com/lazylibrarian/LazyLibrarian.git /app/lazylibrarian
+RUN wget -O /tmp/installer.sh https://download.calibre-ebook.com/linux-installer.sh && \
+    chmod +x /tmp/installer.sh && \
+    /tmp/installer.sh install_dir=/opt/calibre && \
+    rm /tmp/installer.sh
+
+# Add Calibre CLI tools to PATH
+RUN ln -s /opt/calibre/calibredb /usr/bin/calibredb && \
+    ln -s /opt/calibre/ebook-convert /usr/bin/ebook-convert && \
+    ln -s /opt/calibre/ebook-meta /usr/bin/ebook-meta && \
+    ln -s /opt/calibre/ebook-polish /usr/bin/ebook-polish
 
 ############################
 # Install kepubify
@@ -31,7 +54,7 @@ RUN wget -O /usr/local/bin/kepubify \
     ln -s /usr/local/bin/kepubify /usr/bin/kepubify
 
 ############################
-# Install minimal ffmpeg
+# Install ffmpeg
 ############################
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -39,35 +62,16 @@ RUN apt-get update && \
         && rm -rf /var/lib/apt/lists/*
 
 ############################
-# Calibre CLI already exists:
-#   /usr/bin/calibredb
-#   /usr/bin/ebook-convert
-#   /usr/bin/ebook-meta
-#   /usr/bin/ebook-polish
+# Environment
 ############################
-
-############################
-# Configure LazyLibrarian service
-############################
-ENV LAZYLIBRARIAN_HOME="/app/lazylibrarian"
 ENV PYTHONUNBUFFERED=1
+ENV LAZYLIBRARIAN_HOME="/app/lazylibrarian"
+ENV LD_LIBRARY_PATH="/opt/calibre:${LD_LIBRARY_PATH}"
 
+############################
 # Expose LazyLibrarian port
+############################
 EXPOSE 5299
-
-# s6 overlay already exists in LSIO base image
-# Create service directory
-RUN mkdir -p /etc/services.d/lazylibrarian
-
-# s6 service run script
-RUN printf '#!/usr/bin/with-contenv bash\nexec python3 /app/lazylibrarian/LazyLibrarian.py --nolaunch\n' \
-    > /etc/services.d/lazylibrarian/run && \
-    chmod +x /etc/services.d/lazylibrarian/run
-
-# s6 finish script
-RUN printf '#!/usr/bin/with-contenv bash\nexit 0\n' \
-    > /etc/services.d/lazylibrarian/finish && \
-    chmod +x /etc/services.d/lazylibrarian/finish
 
 ############################
 # Cleanup
