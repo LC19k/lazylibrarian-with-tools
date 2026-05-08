@@ -6,38 +6,20 @@
 FROM lscr.io/linuxserver/lazylibrarian:latest
 
 ############################
-# Install Calibre (official installer)
+# Install Calibre (self-contained binary tarball)
 ############################
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         wget \
         xz-utils \
-        python3 \
-        python3-setuptools \
-        python3-lxml \
-        python3-openssl \
-        libegl1 \
-        libopengl0 \
-        libxcb-cursor0 \
-        libxkbcommon0 \
-        libxkbcommon-x11-0 \
-        libxcb-xkb1 \
-        libxcb-render0 \
-        libxcb-shape0 \
-        libxcb-xfixes0 \
-        libgl1 \
-        libglx0 \
-        libglvnd0 \
-        libwayland-client0 \
-        libwayland-cursor0 \
-        libwayland-egl1 \
         ca-certificates \
         && rm -rf /var/lib/apt/lists/*
 
-RUN wget -O /tmp/installer.sh https://download.calibre-ebook.com/linux-installer.sh && \
-    chmod +x /tmp/installer.sh && \
-    /tmp/installer.sh install_dir=/opt/calibre && \
-    rm /tmp/installer.sh
+# Download and extract Calibre (self-contained, no system deps)
+RUN wget -O /tmp/calibre.txz https://download.calibre-ebook.com/9.7.0/calibre-9.7.0-x86_64.txz && \
+    mkdir -p /opt/calibre && \
+    tar -xJf /tmp/calibre.txz -C /opt/calibre --strip-components=1 && \
+    rm /tmp/calibre.txz
 
 # Add Calibre CLI tools to PATH
 RUN ln -sf /opt/calibre/calibredb /usr/bin/calibredb && \
