@@ -16,7 +16,6 @@ RUN apt-get update && \
         python3-lxml \
         python3-openssl \
         python3-setuptools \
-        python3-distutils \
         ca-certificates \
         && rm -rf /var/lib/apt/lists/*
 
