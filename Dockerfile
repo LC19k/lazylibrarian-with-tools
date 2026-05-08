@@ -40,10 +40,10 @@ RUN wget -O /tmp/installer.sh https://download.calibre-ebook.com/linux-installer
     rm /tmp/installer.sh
 
 # Add Calibre CLI tools to PATH
-RUN ln -s /opt/calibre/calibredb /usr/bin/calibredb && \
-    ln -s /opt/calibre/ebook-convert /usr/bin/ebook-convert && \
-    ln -s /opt/calibre/ebook-meta /usr/bin/ebook-meta && \
-    ln -s /opt/calibre/ebook-polish /usr/bin/ebook-polish
+RUN ln -sf /opt/calibre/calibredb /usr/bin/calibredb && \
+    ln -sf /opt/calibre/ebook-convert /usr/bin/ebook-convert && \
+    ln -sf /opt/calibre/ebook-meta /usr/bin/ebook-meta && \
+    ln -sf /opt/calibre/ebook-polish /usr/bin/ebook-polish
 
 ############################
 # Install kepubify
