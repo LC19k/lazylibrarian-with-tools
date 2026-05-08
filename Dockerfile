@@ -141,7 +141,7 @@ COPY --from=calibre-builder /opt/calibre /opt/calibre
 #   "No ebook-convert found"
 #   "error while loading shared libraries"
 #######################################################################
-ENV LD_LIBRARY_PATH="/opt/calibre/lib:${LD_LIBRARY_PATH}"
+ENV LD_LIBRARY_PATH="/opt/calibre:${LD_LIBRARY_PATH}"
 
 # Copy minimal ffmpeg
 COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
