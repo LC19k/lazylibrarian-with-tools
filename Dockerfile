@@ -61,7 +61,7 @@ RUN wget https://ffmpeg.org/releases/ffmpeg-6.1.1.tar.gz && \
 
 
 #######################################################################
-# Stage 2 — Build Calibre CLI tools (headless)
+# Stage 2 — Build Calibre CLI tools (headless, correct installer)
 #######################################################################
 FROM debian:stable-slim AS calibre-builder
 
@@ -70,27 +70,28 @@ RUN apt-get update && \
         wget \
         xz-utils \
         ca-certificates \
+        libglib2.0-0 \
+        libx11-6 \
+        libxcb1 \
+        libxext6 \
+        libxrender1 \
+        libxi6 \
+        libsm6 \
+        libice6 \
         && rm -rf /var/lib/apt/lists/*
 
-RUN wget -O /tmp/calibre.txz \
-        https://download.calibre-ebook.com/9.7.0/calibre-9.7.0-x86_64.txz && \
-    mkdir -p /opt/calibre && \
-    tar -xJf /tmp/calibre.txz -C /opt/calibre --strip-components=1 && \
-    rm /tmp/calibre.txz
+# Install Calibre using the official installer script
+RUN wget -O /tmp/installer.sh https://download.calibre-ebook.com/linux-installer.sh && \
+    chmod +x /tmp/installer.sh && \
+    /tmp/installer.sh install_dir=/opt/calibre && \
+    rm /tmp/installer.sh
 
-# Remove GUI components to reduce size and avoid Qt dependencies
+# Remove GUI components (optional)
 RUN rm -rf \
-    /opt/calibre/lib/python3.*/site-packages/calibre/gui \
     /opt/calibre/resources/viewer \
     /opt/calibre/resources/fonts \
     /opt/calibre/resources/images \
-    /opt/calibre/resources/qtwebengine* \
-    /opt/calibre/lib/libQt* \
-    /opt/calibre/lib/libxcb* \
-    /opt/calibre/lib/libX* \
-    /opt/calibre/lib/libGL* \
-    /opt/calibre/lib/libEGL* \
-    /opt/calibre/lib/libOpenGL*
+    /opt/calibre/resources/qtwebengine*
 
 
 
