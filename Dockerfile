@@ -15,10 +15,10 @@ RUN apt-get update && \
         ca-certificates \
         && rm -rf /var/lib/apt/lists/*
 
-# Download and extract Calibre (correct extraction, no broken paths)
+# Download and extract Calibre (NO strip-components)
 RUN wget -O /tmp/calibre.txz https://download.calibre-ebook.com/9.7.0/calibre-9.7.0-x86_64.txz && \
     mkdir -p /opt/calibre && \
-    tar -xJf /tmp/calibre.txz -C /opt/calibre --strip-components=1 && \
+    tar -xJf /tmp/calibre.txz -C /opt/calibre && \
     rm /tmp/calibre.txz
 
 # Add Calibre CLI tools to PATH
