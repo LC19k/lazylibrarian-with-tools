@@ -70,6 +70,8 @@ RUN apt-get update && \
         wget \
         xz-utils \
         ca-certificates \
+        python3 \
+        python3-distutils \
         libglib2.0-0 \
         libx11-6 \
         libxcb1 \
@@ -86,7 +88,7 @@ RUN wget -O /tmp/installer.sh https://download.calibre-ebook.com/linux-installer
     /tmp/installer.sh install_dir=/opt/calibre && \
     rm /tmp/installer.sh
 
-# Remove GUI components (optional)
+# Optional: remove GUI components
 RUN rm -rf \
     /opt/calibre/resources/viewer \
     /opt/calibre/resources/fonts \
