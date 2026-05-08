@@ -1,24 +1,9 @@
 #######################################################################
-# Dockerfile: LazyLibrarian + Calibre CLI + kepubify + minimal ffmpeg
+# Dockerfile: LazyLibrarian + kepubify + minimal ffmpeg
 #
-# This file uses a multi‑stage build to produce a clean, minimal,
-# deterministic final image based on LinuxServer.io's LazyLibrarian.
-#
-# Stages:
-#   1. ffmpeg-builder       → Build a minimal ffmpeg (audio-only)
-#   2. calibre-builder      → Build headless Calibre CLI tools
-#   3. kepubify-builder     → Download kepubify without polluting final image
-#   4. Final stage          → Assemble everything into LSIO LazyLibrarian
-#
-# Notes for maintainers:
-#   - ffmpeg is intentionally minimal to reduce image size.
-#   - Calibre GUI components are removed to avoid unnecessary bloat.
-#   - kepubify is built in a separate Alpine stage to avoid installing
-#     wget/curl/SSL dependencies in the final Debian-based LSIO image.
-#   - The final image contains *no* build tools and *no* compilers.
-#   - This Dockerfile is designed for deterministic, reproducible builds.
+# Calibre is NO LONGER built inside this image.
+# Calibre CLI tools are mounted from the LSIO Calibre container.
 #######################################################################
-
 
 #######################################################################
 # Stage 1 — Build minimal ffmpeg
@@ -59,46 +44,8 @@ RUN wget https://ffmpeg.org/releases/ffmpeg-6.1.1.tar.gz && \
         && make -j$(nproc) && make install
 
 
-
 #######################################################################
-# Stage 2 — Build Calibre CLI tools (headless, correct installer)
-#######################################################################
-FROM debian:stable-slim AS calibre-builder
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        wget \
-        xz-utils \
-        ca-certificates \
-        python3 \
-        python3-setuptools \
-        libglib2.0-0 \
-        libx11-6 \
-        libxcb1 \
-        libxext6 \
-        libxrender1 \
-        libxi6 \
-        libsm6 \
-        libice6 \
-        && rm -rf /var/lib/apt/lists/*
-
-# Install Calibre using the official installer script
-RUN wget -O /tmp/installer.sh https://download.calibre-ebook.com/linux-installer.sh && \
-    chmod +x /tmp/installer.sh && \
-    /tmp/installer.sh install_dir=/opt/calibre && \
-    rm /tmp/installer.sh
-
-# Optional: remove GUI components
-RUN rm -rf \
-    /opt/calibre/resources/viewer \
-    /opt/calibre/resources/fonts \
-    /opt/calibre/resources/images \
-    /opt/calibre/resources/qtwebengine*
-
-
-
-#######################################################################
-# Stage 3 — Build kepubify (standalone)
+# Stage 2 — Build kepubify
 #######################################################################
 FROM alpine:latest AS kepubify-builder
 
@@ -108,56 +55,17 @@ RUN apk add --no-cache wget && \
     chmod +x /kepubify
 
 
-
 #######################################################################
-# Stage 4 — Final LazyLibrarian image
+# Stage 3 — Final LazyLibrarian image
 #######################################################################
 FROM lscr.io/linuxserver/lazylibrarian:latest
-
-# Install runtime dependencies for Calibre CLI
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        python3 \
-        libxml2 \
-        libxslt1.1 \
-        libjpeg-turbo8 \
-        libpng16-16 \
-        libfreetype6 \
-        libharfbuzz0b \
-        libfontconfig1 \
-        unrar \
-        && rm -rf /var/lib/apt/lists/*
-
-# Copy Calibre CLI tools
-COPY --from=calibre-builder /opt/calibre /opt/calibre
-
-#######################################################################
-# IMPORTANT: Register Calibre shared libraries
-#
-# Without this, Debian cannot find:
-#   libcalibre-launcher.so
-#   libcalibre-utils.so
-#   libQt5Core.so (if present)
-#
-# This fixes:
-#   calibredb rc 127
-#   "No ebook-convert found"
-#   "error while loading shared libraries"
-#######################################################################
-ENV LD_LIBRARY_PATH="/opt/calibre:${LD_LIBRARY_PATH}"
 
 # Copy minimal ffmpeg
 COPY --from=ffmpeg-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 
-# Copy kepubify from builder stage
+# Copy kepubify
 COPY --from=kepubify-builder /kepubify /usr/local/bin/kepubify
 RUN ln -s /usr/local/bin/kepubify /usr/bin/kepubify
-
-# Symlink Calibre tools into PATH
-RUN ln -s /opt/calibre/calibredb /usr/bin/calibredb && \
-    ln -s /opt/calibre/ebook-convert /usr/bin/ebook-convert && \
-    ln -s /opt/calibre/ebook-meta /usr/bin/ebook-meta && \
-    ln -s /opt/calibre/ebook-polish /usr/bin/ebook-polish
 
 # Cleanup
 RUN rm -rf /tmp/* /var/tmp/*
