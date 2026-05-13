@@ -1,46 +1,40 @@
 #######################################################################
-# LazyLibrarian + Calibre (official installer) + ffmpeg + kepubify
+# LazyLibrarian + Calibre (self-contained .txz) + ffmpeg + kepubify
 # Base: LSIO LazyLibrarian (Ubuntu Jammy)
 #######################################################################
 
 FROM lscr.io/linuxserver/lazylibrarian:latest
 
-# Optional: scaffold for KoboTouchExtended plugin
 ARG ENABLE_KOBO_PLUGIN=0
-
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     LAZYLIBRARIAN_HOME="/app/lazylibrarian"
 
 ############################
-# Install Calibre (official installer)
+# Install dependencies for Calibre + tools
 ############################
-RUN echo "**** install Calibre + deps ****" && \
+RUN echo "**** install base deps ****" && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         wget \
         xz-utils \
         ca-certificates \
-        libgl1 \
-        libegl1 \
-        libxrandr2 \
-        libxcomposite1 \
-        libxcursor1 \
-        libxdamage1 \
-        libxfixes3 \
-        libxi6 \
-        libxtst6 \
-        libnss3 \
-        libasound2 \
-        libxkbcommon0 \
-        libx11-xcb1 \
-        && rm -rf /var/lib/apt/lists/* && \
-    wget -O /tmp/calibre-installer.sh https://download.calibre-ebook.com/linux-installer.sh && \
-    chmod +x /tmp/calibre-installer.sh && \
-    /tmp/calibre-installer.sh && \
-    rm -f /tmp/calibre-installer.sh
+        ffmpeg \
+        && rm -rf /var/lib/apt/lists/*
 
-# Calibre installs into /opt/calibre by default; make sure CLI tools are on PATH
+############################
+# Install Calibre (self-contained tarball)
+############################
+RUN echo "**** install Calibre (self-contained .txz) ****" && \
+    wget -O /tmp/calibre.txz https://download.calibre-ebook.com/9.7.0/calibre-9.7.0-x86_64.txz && \
+    mkdir -p /opt/calibre && \
+    tar -xJf /tmp/calibre.txz -C /opt/calibre && \
+    rm /tmp/calibre.txz && \
+    ln -sf /opt/calibre/calibredb /usr/bin/calibredb && \
+    ln -sf /opt/calibre/ebook-convert /usr/bin/ebook-convert && \
+    ln -sf /opt/calibre/ebook-meta /usr/bin/ebook-meta && \
+    ln -sf /opt/calibre/ebook-polish /usr/bin/ebook-polish
+
 ENV PATH="/opt/calibre:${PATH}" \
     LD_LIBRARY_PATH="/opt/calibre:${LD_LIBRARY_PATH}"
 
@@ -52,15 +46,6 @@ RUN echo "**** install kepubify ****" && \
         https://github.com/pgaskin/kepubify/releases/latest/download/kepubify-linux-64bit && \
     chmod +x /usr/local/bin/kepubify && \
     ln -sf /usr/local/bin/kepubify /usr/bin/kepubify
-
-############################
-# Install ffmpeg (for audiobooks / media)
-############################
-RUN echo "**** install ffmpeg ****" && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        ffmpeg \
-        && rm -rf /var/lib/apt/lists/*
 
 ############################
 # OPTIONAL: KoboTouchExtended plugin scaffold
